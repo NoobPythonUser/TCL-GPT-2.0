@@ -5,7 +5,7 @@ type ChatMessage = {
   content: string;
 };
 
-const OPENROUTER_API_KEY = "sk-or-v1-REPLACE_WITH_REAL_KEY";
+const OPENROUTER_API_KEY = "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";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const FIXED_MODEL = "openai/gpt-4o-mini";
 

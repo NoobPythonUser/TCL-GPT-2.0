@@ -33,7 +33,7 @@ Simple internal AI chat app for The Content Lab.
 ├── components
 │   └── chat-app.tsx
 ├── next-env.d.ts
-├── next.config.ts
+├── next.config.mjs
 ├── package.json
 ├── postcss.config.mjs
 ├── tailwind.config.ts
@@ -47,10 +47,7 @@ Simple internal AI chat app for The Content Lab.
    ```bash
    npm install
    ```
-2. Update API key in `app/api/chat/route.ts`:
-   ```ts
-   const OPENROUTER_API_KEY = "sk-or-v1-REPLACE_WITH_REAL_KEY";
-   ```
+2. API key is currently hardcoded in `app/api/chat/route.ts` for internal use (temporary approach).
 3. Start dev server:
    ```bash
    npm run dev
@@ -64,5 +61,5 @@ Simple internal AI chat app for The Content Lab.
 3. Keep framework preset as **Next.js**.
 4. Deploy.
 
-> Since this version hardcodes the OpenRouter key in backend code, rotate the key if shared. For production, move the key into Vercel environment variables.
+> This version hardcodes the OpenRouter key in backend code as requested. For production, move the key into Vercel environment variables and rotate the current key.
 
