@@ -5,7 +5,8 @@ type ChatMessage = {
   content: string;
 };
 
-const OPENROUTER_API_KEY = "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";
+const FALLBACK_OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = (process.env.OPENROUTER_API_KEY ?? FALLBACK_OPENROUTER_API_KEY).trim();
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const FIXED_MODEL = "openai/gpt-4o-mini";
 
@@ -35,12 +36,16 @@ export async function POST(req: NextRequest) {
       return new Response("No messages provided", { status: 400 });
     }
 
+    if (!OPENROUTER_API_KEY) {
+      return new Response("Server misconfiguration: missing OpenRouter API key", { status: 500 });
+    }
+
     const upstream = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://tcl-gpt-2-0.vercel.app",
+        "HTTP-Referer": req.nextUrl.origin,
         "X-Title": "The Content Lab AI"
       },
       body: JSON.stringify({
@@ -52,7 +57,16 @@ export async function POST(req: NextRequest) {
 
     if (!upstream.ok || !upstream.body) {
       const errorText = await upstream.text();
-      return new Response(`OpenRouter error: ${errorText}`, { status: upstream.status || 500 });
+      const status = upstream.status || 500;
+
+      if (status === 401) {
+        return new Response(
+          "OpenRouter authentication failed (401). Verify OPENROUTER_API_KEY in Vercel project settings or rotate the hardcoded fallback key.",
+          { status }
+        );
+      }
+
+      return new Response(`OpenRouter error: ${errorText}`, { status });
     }
 
     const decoder = new TextDecoder();

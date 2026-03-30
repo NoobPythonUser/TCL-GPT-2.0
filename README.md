@@ -47,7 +47,7 @@ Simple internal AI chat app for The Content Lab.
    ```bash
    npm install
    ```
-2. API key is currently hardcoded in `app/api/chat/route.ts` for internal use (temporary approach).
+2. API key is hardcoded in `app/api/chat/route.ts` (fallback) and can be overridden with `OPENROUTER_API_KEY`.
 3. Start dev server:
    ```bash
    npm run dev
@@ -59,7 +59,8 @@ Simple internal AI chat app for The Content Lab.
 1. Push this repo to GitHub.
 2. In Vercel, click **Add New Project** and import the repo.
 3. Keep framework preset as **Next.js**.
-4. Deploy.
+4. In **Project Settings → Environment Variables**, set `OPENROUTER_API_KEY` (recommended).
+5. Deploy.
 
-> This version hardcodes the OpenRouter key in backend code as requested. For production, move the key into Vercel environment variables and rotate the current key.
+> This version still includes a hardcoded fallback key in backend code for simplicity, but Vercel env vars take precedence and are recommended.
 
