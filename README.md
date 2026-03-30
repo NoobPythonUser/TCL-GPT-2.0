@@ -13,8 +13,9 @@ Simple internal AI chat app for The Content Lab.
 
 - Backend-only OpenRouter integration (`/api/chat`)
 - Hardcoded API key in backend route (temporary)
-- Fixed model + injected system prompt
+- Backend-managed model fallback chain (free-first) + injected system prompt
 - Streaming responses to UI
+- Model order (backend only): `OPENROUTER_MODEL` override -> `meta-llama/llama-3.3-8b-instruct:free` -> `google/gemma-2-9b-it:free` -> `openai/gpt-4o-mini`
 - Dark chat interface with neon accents
 - Copy assistant response button
 - Clear chat action

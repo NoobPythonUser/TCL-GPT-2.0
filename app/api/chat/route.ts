@@ -8,7 +8,13 @@ type ChatMessage = {
 const FALLBACK_OPENROUTER_API_KEY = "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";
 const OPENROUTER_API_KEY = (process.env.OPENROUTER_API_KEY ?? FALLBACK_OPENROUTER_API_KEY).trim();
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const FIXED_MODEL = "openai/gpt-4o-mini";
+
+const MODEL_CANDIDATES = [
+  process.env.OPENROUTER_MODEL?.trim(),
+  "meta-llama/llama-3.3-8b-instruct:free",
+  "google/gemma-2-9b-it:free",
+  "openai/gpt-4o-mini"
+].filter((model): model is string => Boolean(model));
 
 const SYSTEM_PROMPT = `You are The Content Lab AI.
 You help employees in branding, advertising, and social media.
@@ -40,33 +46,56 @@ export async function POST(req: NextRequest) {
       return new Response("Server misconfiguration: missing OpenRouter API key", { status: 500 });
     }
 
-    const upstream = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": req.nextUrl.origin,
-        "X-Title": "The Content Lab AI"
-      },
-      body: JSON.stringify({
-        model: FIXED_MODEL,
-        stream: true,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages]
-      })
-    });
+    const payload = {
+      stream: true,
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages]
+    };
 
-    if (!upstream.ok || !upstream.body) {
-      const errorText = await upstream.text();
-      const status = upstream.status || 500;
+    let upstream: Response | null = null;
+    let attemptedModel: string | null = null;
+    let lastErrorText = "";
 
-      if (status === 401) {
+    for (const model of MODEL_CANDIDATES) {
+      attemptedModel = model;
+      const response = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "HTTP-Referer": req.nextUrl.origin,
+          "X-Title": "The Content Lab AI"
+        },
+        body: JSON.stringify({ ...payload, model })
+      });
+
+      if (response.ok && response.body) {
+        upstream = response;
+        break;
+      }
+
+      const errorText = await response.text();
+      lastErrorText = errorText;
+
+      if (response.status === 401) {
         return new Response(
           "OpenRouter authentication failed (401). Verify OPENROUTER_API_KEY in Vercel project settings or rotate the hardcoded fallback key.",
-          { status }
+          { status: response.status }
         );
       }
 
-      return new Response(`OpenRouter error: ${errorText}`, { status });
+      // Try next model for no-credit or unavailable-model responses.
+      if (response.status === 402 || response.status === 404 || response.status === 400) {
+        continue;
+      }
+
+      return new Response(`OpenRouter error (${response.status}): ${errorText}`, { status: response.status || 500 });
+    }
+
+    if (!upstream?.body) {
+      return new Response(
+        `OpenRouter error: no available models succeeded. Last attempted model: ${attemptedModel}. Last error: ${lastErrorText}`,
+        { status: 502 }
+      );
     }
 
     const decoder = new TextDecoder();
